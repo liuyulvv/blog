@@ -78,7 +78,6 @@ const int const_a = 10; //无法修改const_a的值，顶层const
 int b = 10;
 int *const p1 = &b; //无法修改p1的值，即无法指向其他对象，顶层const
 const int *p2 = &b; //可以修改p2的值，即可以指向其他对象，底层const
-
 ```
 
 ### 总结
