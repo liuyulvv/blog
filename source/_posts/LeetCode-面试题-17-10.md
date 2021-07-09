@@ -1,7 +1,7 @@
 ---
 title: LeetCode-面试题-17.10
 date: 2021-07-09 11:07:59
-categories: [Leetcode]
+categories: [LeetCode]
 tags: [LeetCode,C++]
 description: LeetCode面试题17.10,主要元素
 ---

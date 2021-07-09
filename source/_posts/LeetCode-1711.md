@@ -1,7 +1,7 @@
 ---
 title: LeetCode-1711
 date: 2021-07-07 14:48:22
-categories: [Leetcode]
+categories: [LeetCode]
 tags: [LeetCode,C++]
 description: LeetCode-1711,大餐计数
 ---

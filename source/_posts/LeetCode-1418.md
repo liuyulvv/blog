@@ -1,7 +1,7 @@
 ---
 title: LeetCode-1418
 date: 2021-07-07 14:48:43
-categories: [Leetcode]
+categories: [LeetCode]
 tags: [LeetCode,C++]
 description: LeetCode-1418,点菜展示表
 ---
