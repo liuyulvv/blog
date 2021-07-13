@@ -128,8 +128,8 @@ struct sockaddr_in6
 ```cpp
 #include <arpa/inet.h>
 
-in_addr_t inet_addr(const char *strptr);     // 点分十进制字符串IPv4地址转换为网络字节序IPv4地址
-int inet_aton(const char *cp, in_addr *inp); // 同上，转换结果存储至inp
+in_addr_t inet_addr(const char *strptr);     // 点分十进制字符串IPv4地址转换为网络字节序IPv4地址，失败返回INADDR_NONE
+int inet_aton(const char *cp, in_addr *inp); // 同上，转换结果存储至inp，成功返回1，失败返回0
 char *inet_ntoa(in_addr in);                 // 网络字节序IPv4地址转换为点分十进制，该函数返回值指向一个静态变量
 ```
 
@@ -138,9 +138,11 @@ char *inet_ntoa(in_addr in);                 // 网络字节序IPv4地址转换�
 ```cpp
 #include <arpa/inet.h>
 
-int inet_pton(int af, const char *src, void *dst); // af指定地址族: AF_INET 或者 AF_INET6
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);   
+int inet_pton(int af, const char *src, void *dst);                        // af指定地址族: AF_INET 或者 AF_INET6。成功时返回1，失败则返回0并设置errno
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt); // cnt指定目标存储单元的大小。inet_ntop成功时返回目标存储单元的地址，失败则返回nullptr并设置errno
+```
 
+```cpp
 //cnt指定目标存储单元的大小
 #include <netinet/in.h>
 
@@ -149,5 +151,52 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 ```
 
 ### 创建socket
+
+socket是一个可读、可写、可控制、可关闭的文件描述符，下面的socket系统调用可创建一个socket：
+
+```cpp
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int socket(int domain, int type, int protocol); // 成功时返回一个socket文件描述符，失败则返回-1并设置errno
+```
+
+domain参数告诉系统使用哪个底层协议族。对于TCP/IP协议族而言，设置为PF_INET或PF_INET6，对于UNIX本地域协议族而言，设置为PF_UNIX。
+
+type参数指定服务类型，主要有SOCK_STREAM（流服务）和SOCK_DGRAM（数据报）服务，对于TCP/IP协议族而言，SOCKET_STREAM表示传输层使用TCP协议，SOCKET_DGRAM表示传输层使用UDP协议。自Linux内核版本2.6.27，type参数可以接受上述服务类型与下面两个重要的标志相或的值：SOCK_NONBLOCK和SOCK_CLOEXEC，分别表示将新创的socket设为非阻塞的，以及用fork调用创建子进程时在子进程中关闭该socket。
+
+protocol参数是在前两个参数构成的协议集合下，在选择一个具体的协议，几乎在所有情况下，都应该把它设置为0，表示使用默认协议。
+
+### 命名socket
+
+创建socket时，我们给它指定了地址族，但是并未指定使用该地址族中的哪个具体socket地址，将一个socket与socket地址绑定称为给socket命名。在服务器程序中，我们通常要命名socket，因为只有命名后客户端才能知道如何连接它，客户端则通常不需要命名socket，而是采用匿名方式，即使用操作系统自动分配的socket地址。命名socket的系统调用是bind，其定义如下：
+
+```cpp
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int bind(int sockfd, const sockaddr *my_addr, socklen_t addrlen); // 成功返回0，失败返回-1并设置errno
+```
+
+bind将my_addr所指的socket地址分配给未命名的sockfd文件描述符，addrlen参数指出该socket地址的长度。bind两种常见的errno时EACCES和EADDRINUSE，它们的含义分别是：
+
+- EACCES：被绑定的地址是受保护的地址，仅超级用户能够访问。
+- EADDRINUSE：被绑定的地址正在使用中。
+
+### 监听socket
+
+socket被命名之后，还不能马上接受客户连接，我们需要使用如下系统调用来创建一个监听队列以存放待处理的客户连接：
+
+```cpp
+#include <sys/socket.h>
+
+int listen(int sockfd, int backlog); // 成功返回0，失败返回-1并设置errno
+```
+
+sockfd参数指定被监听的socket，backlog参数提示内核监听队列的最大长度。监听队列的长度如果超过backlog，服务器将不受理新的客户连接，客户端也将收到ECONNREFUSED错误。
+
+### 接受连接
+
+下面的系统从listen监听队列中接受一个连接：
 
 未完待续。
