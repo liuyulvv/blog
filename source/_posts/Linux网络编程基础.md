@@ -199,4 +199,61 @@ sockfd参数指定被监听的socket，backlog参数提示内核监听队列的�
 
 下面的系统从listen监听队列中接受一个连接：
 
+```cpp
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int accept(int sockfd, sockaddr *addr,socklen_t *addrlen); // 失败返回-1，并设置errno
+```
+
+sockfd参数是执行过listen系统调用的监听socket，addr参数用来获取被接受连接的远端socket地址，该socket唯一地标识了被接受的这个连接，服务器可通过该socket来与被接受连接对应的客户端通信。
+
+accept只是从监听队列中取出连接，而不论连接处于何种状态，更不关心任何网络状况的变化。
+
+### 发起连接
+
+服务器通过listen调用来被动接受连接，客户端需要通过如下系统调用主动与服务器连接：
+
+```cpp
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int connect(int sockfd, const sockaddr *serv_addr,socklen_t addrlen); //成功返回0，失败返回-1并设置errno
+```
+
+sockfd是客户端socket调用返回的一个socket，serv_addr参数是服务器监听的socket地址，addrlen参数指定这个地址的长度。connect两种常见的errno是ECONNREFUSED和ETIMEDOUT，它们的含义分别是：
+
+- ECONNREFUSED：目标端口不存在
+- ETIMEDOUT：连接超时
+
+### 关闭连接
+
+关闭一个连接实际上就是关闭该连接对应的socket，这个通过如下关闭普通文件描述符的系统调用来完成：
+
+```cpp
+#include <unistd.h>
+
+int close(int fd);
+```
+
+fd参数是待关闭的socket，不过，close系统调用并非总是立即关闭一个连接，而是将fd的引用计数减1。只有当fd的引用计数为0时，才真正关闭连接。多进程程序中，一次fork系统调用默认将使父进程中打开的socket的引用计数加1，因此必须在父进程和子进程中都对该socket执行close调用才能将连接关闭。
+
+如果要立即终止连接，可以使用如下系统调用：
+
+```cpp
+#include <sys/socket.h>
+
+int shutdown(int sockfd, int howto); //成功返回0，失败返回-1并设置errno
+```
+
+sockfd是待关闭的socket，howto参数决定了shutdown的行为，它可取下表中的某个值。
+
+|可选值|含义|
+|---|---|
+|SHUT_RD|关闭sockfd的读，且该socket接收缓冲区中的数据都被丢弃|
+|SHUT_WR|关闭sockfd的写，sockfd的发送缓冲区会在真正关闭连接之前全部发送出去|
+|SHUT_RDWR|同时关闭sockfd的读和写|
+
+### 数据读写
+
 未完待续。
